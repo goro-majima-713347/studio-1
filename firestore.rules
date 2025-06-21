@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // This rule allows anyone to read and write to the "beings" collection.
+    // It's useful for getting started and for development.
+    //
+    // WARNING: For a production app, you should implement authentication
+    // and secure these rules. For example, you might change it to:
+    // `allow read, write: if request.auth != null;`
+    // which would only allow logged-in users to access the data.
+    match /beings/{beingId} {
+      allow read, write: if true;
+    }
+  }
+}
