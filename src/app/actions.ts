@@ -2,6 +2,7 @@
 "use server";
 
 import { generateUniqueResponse } from "@/ai/flows/generate-unique-response";
+import { generateImage } from "@/ai/flows/generate-image-flow";
 import { z } from "zod";
 
 const messageSchema = z.object({
@@ -20,5 +21,15 @@ export async function handleUserMessage(data) {
   } catch (error) {
     console.error("Error generating AI response:", error);
     return { response: "I'm feeling a bit quiet right now..." };
+  }
+}
+
+export async function handleImageGeneration(prompt: string) {
+  try {
+    const result = await generateImage({ prompt });
+    return result.imageUrl;
+  } catch (error) {
+    console.error("Error generating AI image:", error);
+    return null;
   }
 }

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { handleImageGeneration } from "@/app/actions";
 
 const initialStats = { hunger: 70, happiness: 80, energy: 60 };
 const initialBeing = {
@@ -25,6 +26,7 @@ const initialBeing = {
   personality: "元気いっぱいのひよこ。おしゃべりと探検が大好き！",
   color: "primary",
   stats: initialStats,
+  imageUrl: null,
 };
 const initialTasks = [
   { id: 1, text: "15分間本を読む", completed: false },
@@ -55,6 +57,7 @@ export default function Home() {
   const [evolutionStage, setEvolutionStage] = useState(0);
   const [evolutionType, setEvolutionType] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -73,6 +76,7 @@ export default function Home() {
               personality: data.personality,
               color: data.color,
               stats: data.stats,
+              imageUrl: data.imageUrl || null,
             });
             setTasks(data.tasks || initialTasks);
             setConversation(data.conversation || [{ sender: "being", text: "おかえり！また会えてうれしいな！" }]);
@@ -162,6 +166,7 @@ export default function Home() {
               ...prev,
               name: "ニワトリクイーン",
               personality: "優雅で気品のあるニワトリの女王。みんなに優しい。",
+              imageUrl: null,
             }));
             toast({
               title: "究極の進化！",
@@ -174,6 +179,7 @@ export default function Home() {
               ...prev,
               name: "ニワトリキング",
               personality: "威厳あふれるニワトリの王。風格が漂う。",
+              imageUrl: null,
             }));
             toast({
               title: "さらなる進化！",
@@ -193,6 +199,7 @@ export default function Home() {
             ...prev,
             name: "コケこっこ",
             personality: "りっぱなニワトリに成長した！自信に満ちあふれている。",
+            imageUrl: null,
           }));
           toast({
             title: "おめでとう！",
@@ -310,6 +317,33 @@ export default function Home() {
     });
   };
 
+  const handleGenerateImage = async (prompt) => {
+    if (isGeneratingImage) return;
+
+    setIsGeneratingImage(true);
+    toast({
+      title: "画像を生成中...",
+      description: "新しい姿を想像しています。少しお待ちください。",
+    });
+
+    const newImageUrl = await handleImageGeneration(prompt);
+
+    if (newImageUrl) {
+        setBeing(prev => ({ ...prev, imageUrl: newImageUrl }));
+        toast({
+            title: "画像ができました！",
+            description: `${being.name}の新しい姿を見てみよう！`,
+        });
+    } else {
+        toast({
+            variant: "destructive",
+            title: "画像の生成に失敗しました",
+            description: "もう一度試してみてください。",
+        });
+    }
+    setIsGeneratingImage(false);
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       updateStat("hunger", -2);
@@ -397,7 +431,15 @@ export default function Home() {
         </div>
         
         <div className="lg:col-span-1 flex flex-col items-center justify-center order-first lg:order-none">
-          <VirtualBeing name={being.name} color={being.color} evolutionStage={evolutionStage} evolutionType={evolutionType} />
+          <VirtualBeing
+            name={being.name}
+            color={being.color}
+            evolutionStage={evolutionStage}
+            evolutionType={evolutionType}
+            imageUrl={being.imageUrl}
+            onGenerateImage={handleGenerateImage}
+            isGeneratingImage={isGeneratingImage}
+          />
         </div>
         
         <div className="lg:col-span-1">
