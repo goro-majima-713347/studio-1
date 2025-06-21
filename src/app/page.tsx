@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Settings, BarChart } from "lucide-react";
+import { Settings, BarChart, Save } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -94,35 +94,6 @@ export default function Home() {
     };
     loadData();
   }, [toast]);
-
-  useEffect(() => {
-    if (isLoading || !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-      return;
-    }
-    const saveData = async () => {
-      const beingRef = doc(db, "beings", BEING_ID);
-      const dataToSave = {
-        ...being,
-        tasks,
-        conversation,
-        statsHistory,
-        sleepCount,
-        evolutionStage,
-        evolutionType,
-      };
-      try {
-        await setDoc(beingRef, dataToSave);
-      } catch (error) {
-        console.error("Error saving data to Firestore: ", error);
-        toast({
-          variant: "destructive",
-          title: "セーブに失敗しました",
-          description: "記録を保存できませんでした。",
-        });
-      }
-    };
-    saveData();
-  }, [being, tasks, conversation, statsHistory, sleepCount, evolutionStage, evolutionType, isLoading, toast]);
 
   const updateStat = useCallback((stat, value) => {
     setBeing(prev => {
@@ -247,6 +218,41 @@ export default function Home() {
       updateStat('happiness', 5);
     }
   };
+
+  const handleSave = async () => {
+    if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+      toast({
+        title: "セーブ機能は利用できません",
+        description: "Firebaseの設定がありません。",
+      });
+      return;
+    }
+
+    const beingRef = doc(db, "beings", BEING_ID);
+    const dataToSave = {
+      ...being,
+      tasks,
+      conversation,
+      statsHistory,
+      sleepCount,
+      evolutionStage,
+      evolutionType,
+    };
+    try {
+      await setDoc(beingRef, dataToSave);
+      toast({
+        title: "セーブしました！",
+        description: "ぴよちゃんの記録を保存しました。",
+      });
+    } catch (error) {
+      console.error("Error saving data to Firestore: ", error);
+      toast({
+        variant: "destructive",
+        title: "セーブに失敗しました",
+        description: "記録を保存できませんでした。",
+      });
+    }
+  };
   
   const handleSaveCustomization = (newName, newPersonality, newColor) => {
     setBeing(prev => ({
@@ -306,11 +312,15 @@ export default function Home() {
           <p className="text-muted-foreground font-headline">新しいおともだちが、あなたを待っています。</p>
         </div>
         <div className="flex items-center gap-2">
+           <Button variant="ghost" size="icon" onClick={handleSave}>
+             <Save className="h-5 w-5" />
+             <span className="sr-only">データを保存</span>
+           </Button>
            <Sheet>
              <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <BarChart className="h-5 w-5" />
-                  <span className="sr-only">View Stats History</span>
+                  <span className="sr-only">これまでの記録を見る</span>
                 </Button>
              </SheetTrigger>
              <SheetContent>
@@ -329,7 +339,7 @@ export default function Home() {
              trigger={
                <Button variant="ghost" size="icon">
                  <Settings className="h-5 w-5" />
-                 <span className="sr-only">Customize Being</span>
+                 <span className="sr-only">カスタマイズ</span>
                </Button>
              }
            />
