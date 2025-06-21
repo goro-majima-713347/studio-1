@@ -11,6 +11,7 @@ export function ProgressChart({ data }) {
       hunger: { label: "おなか", color: "hsl(var(--accent))" },
       happiness: { label: "きげん", color: "hsl(var(--primary))" },
       energy: { label: "げんき", color: "hsl(var(--chart-4))" },
+      strength: { label: "つよさ", color: "hsl(var(--chart-2))" },
     }
 
   return (
@@ -25,6 +26,7 @@ export function ProgressChart({ data }) {
                 <Line type="monotone" dataKey="hunger" stroke={chartConfig.hunger.color} strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="happiness" stroke={chartConfig.happiness.color} strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="energy" stroke={chartConfig.energy.color} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="strength" stroke={chartConfig.strength.color} strokeWidth={2} dot={false} />
             </LineChart>
         </ResponsiveContainer>
     </ChartContainer>

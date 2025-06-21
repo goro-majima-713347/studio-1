@@ -19,7 +19,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Skeleton } from "@/components/ui/skeleton";
 import { handleImageGeneration } from "@/app/actions";
 
-const initialStats = { hunger: 70, happiness: 80, energy: 60 };
+const initialStats = { hunger: 70, happiness: 80, energy: 60, strength: 50 };
 const initialBeing = {
   name: "ぴよちゃん",
   personality: "元気いっぱいのひよこ。おしゃべりと探検が大好き！",
@@ -37,10 +37,10 @@ const initialConversation = [
 ];
 
 const initialStatsHistory = [
-  { time: "1h ago", ...initialStats },
-  { time: "45m ago", hunger: 65, happiness: 85, energy: 62 },
-  { time: "30m ago", hunger: 75, happiness: 82, energy: 55 },
-  { time: "15m ago", hunger: 72, happiness: 78, energy: 58 },
+  { time: "1h ago", hunger: 70, happiness: 80, energy: 60, strength: 48 },
+  { time: "45m ago", hunger: 65, happiness: 85, energy: 62, strength: 49 },
+  { time: "30m ago", hunger: 75, happiness: 82, energy: 55, strength: 49 },
+  { time: "15m ago", hunger: 72, happiness: 78, energy: 58, strength: 50 },
   { time: "now", ...initialStats },
 ];
 
@@ -82,7 +82,7 @@ export default function Home() {
               name: data.name,
               personality: data.personality,
               color: data.color,
-              stats: data.stats,
+              stats: { ...initialStats, ...data.stats },
               imageUrl: data.imageUrl || null,
             });
             setTasks(data.tasks || initialTasks);
@@ -109,7 +109,7 @@ export default function Home() {
           const savedData = localStorage.getItem(BEING_ID);
           if (savedData) {
             const data = JSON.parse(savedData);
-            setBeing(data.being || initialBeing);
+            setBeing({ ...initialBeing, ...data.being, stats: { ...initialStats, ...data.being?.stats } });
             setTasks(data.tasks || initialTasks);
             setConversation(data.conversation || initialConversation);
             setStatsHistory(data.statsHistory || initialStatsHistory);
@@ -131,7 +131,7 @@ export default function Home() {
 
   const updateStat = useCallback((stat, value) => {
     setBeing(prev => {
-      const newStatValue = Math.max(0, Math.min(100, prev.stats[stat] + value));
+      const newStatValue = Math.max(0, Math.min(100, (prev.stats[stat] ?? 0) + value));
       const newStats = { ...prev.stats, [stat]: newStatValue };
       
       setStatsHistory(prevHistory => {
@@ -149,7 +149,7 @@ export default function Home() {
 
     switch (action) {
       case "feed":
-        statChanges = { hunger: 20, happiness: 5, energy: -5 };
+        statChanges = { hunger: 20, happiness: 5, energy: -5, strength: 10 };
         toastTitle = "おいしい！";
         break;
       case "play":
@@ -223,9 +223,11 @@ export default function Home() {
         return;
     }
     
-    updateStat("hunger", statChanges.hunger);
-    updateStat("happiness", statChanges.happiness);
-    updateStat("energy", statChanges.energy);
+    for (const stat in statChanges) {
+      if (Object.prototype.hasOwnProperty.call(statChanges, stat)) {
+        updateStat(stat, statChanges[stat]);
+      }
+    }
 
     toast({
       title: toastTitle,

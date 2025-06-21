@@ -1,4 +1,4 @@
-import { Heart, Utensils, Zap } from "lucide-react";
+import { Heart, Utensils, Zap, Sword } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
@@ -25,17 +25,22 @@ export function StatsPanel({ stats }) {
         <StatItem
           icon={<Utensils className="h-5 w-5 text-accent" />}
           label="おなか"
-          value={stats.hunger}
+          value={stats.hunger ?? 0}
         />
         <StatItem
           icon={<Heart className="h-5 w-5 text-accent" />}
           label="きげん"
-          value={stats.happiness}
+          value={stats.happiness ?? 0}
         />
         <StatItem
           icon={<Zap className="h-5 w-5 text-accent" />}
           label="げんき"
-          value={stats.energy}
+          value={stats.energy ?? 0}
+        />
+        <StatItem
+          icon={<Sword className="h-5 w-5 text-accent" />}
+          label="つよさ"
+          value={stats.strength ?? 0}
         />
       </CardContent>
     </Card>
