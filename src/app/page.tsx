@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -19,10 +20,19 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Skeleton } from "@/components/ui/skeleton";
 
 const initialStats = { hunger: 70, happiness: 80, energy: 60 };
+const initialBeing = {
+  name: "ぴよちゃん",
+  personality: "元気いっぱいのひよこ。おしゃべりと探検が大好き！",
+  color: "primary",
+  stats: initialStats,
+};
 const initialTasks = [
   { id: 1, text: "15分間本を読む", completed: false },
   { id: 2, text: "パズルを解く", completed: false },
   { id: 3, text: "新しいスキルを練習する", completed: true },
+];
+const initialConversation = [
+  { sender: "being", text: `こんにちは！ぼく、ぴよちゃんだよ。これからよろしくね！` },
 ];
 
 const initialStatsHistory = [
@@ -37,16 +47,9 @@ const BEING_ID = "piyo-chan-01";
 
 export default function Home() {
   const { toast } = useToast();
-  const [being, setBeing] = useState({
-    name: "ぴよちゃん",
-    personality: "元気いっぱいのひよこ。おしゃべりと探検が大好き！",
-    color: "primary",
-    stats: initialStats,
-  });
+  const [being, setBeing] = useState(initialBeing);
   const [tasks, setTasks] = useState(initialTasks);
-  const [conversation, setConversation] = useState([
-    { sender: "being", text: `こんにちは！ぼく、ぴよちゃんだよ。これからよろしくね！` },
-  ]);
+  const [conversation, setConversation] = useState(initialConversation);
   const [statsHistory, setStatsHistory] = useState(initialStatsHistory);
   const [sleepCount, setSleepCount] = useState(0);
   const [evolutionStage, setEvolutionStage] = useState(0);
@@ -55,42 +58,62 @@ export default function Home() {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-        console.warn("Firebase config not found, using local state.");
-        setIsLoading(false);
-        return;
-      }
-      
-      const beingRef = doc(db, "beings", BEING_ID);
-      try {
-        const docSnap = await getDoc(beingRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setBeing({
-            name: data.name,
-            personality: data.personality,
-            color: data.color,
-            stats: data.stats,
+      setIsLoading(true);
+      const hasFirebaseConfig = !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+      if (hasFirebaseConfig) {
+        console.log("Loading data from Firestore...");
+        const beingRef = doc(db, "beings", BEING_ID);
+        try {
+          const docSnap = await getDoc(beingRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setBeing({
+              name: data.name,
+              personality: data.personality,
+              color: data.color,
+              stats: data.stats,
+            });
+            setTasks(data.tasks || initialTasks);
+            setConversation(data.conversation || [{ sender: "being", text: "おかえり！また会えてうれしいな！" }]);
+            setStatsHistory(data.statsHistory || initialStatsHistory);
+            setSleepCount(data.sleepCount || 0);
+            setEvolutionStage(data.evolutionStage || 0);
+            setEvolutionType(data.evolutionType || null);
+            console.log("Data loaded from Firestore.");
+          } else {
+            console.log("No existing data in Firestore, initializing a new being.");
+          }
+        } catch (error) {
+          console.error("Error loading data from Firestore: ", error);
+          toast({
+            variant: "destructive",
+            title: "データの読み込みに失敗しました",
+            description: "クラウドから記録を読み込めませんでした。",
           });
-          setTasks(data.tasks || initialTasks);
-          setConversation(data.conversation || [{ sender: "being", text: "おかえり！また会えてうれしいな！" }]);
-          setStatsHistory(data.statsHistory || initialStatsHistory);
-          setSleepCount(data.sleepCount || 0);
-          setEvolutionStage(data.evolutionStage || 0);
-          setEvolutionType(data.evolutionType || null);
-        } else {
-          console.log("No existing data, initializing a new being in Firestore.");
         }
-      } catch (error) {
-        console.error("Error loading data from Firestore: ", error);
-        toast({
-          variant: "destructive",
-          title: "データの読み込みに失敗しました",
-          description: "保存された記録を読み込めませんでした。",
-        });
-      } finally {
-        setIsLoading(false);
+      } else {
+        console.warn("Firebase config not found, using local storage.");
+        try {
+          const savedData = localStorage.getItem(BEING_ID);
+          if (savedData) {
+            const data = JSON.parse(savedData);
+            setBeing(data.being || initialBeing);
+            setTasks(data.tasks || initialTasks);
+            setConversation(data.conversation || initialConversation);
+            setStatsHistory(data.statsHistory || initialStatsHistory);
+            setSleepCount(data.sleepCount || 0);
+            setEvolutionStage(data.evolutionStage || 0);
+            setEvolutionType(data.evolutionType || null);
+            console.log("Data loaded from local storage.");
+          } else {
+            console.log("No data in local storage.");
+          }
+        } catch (error) {
+            console.error("Error loading data from localStorage: ", error);
+        }
       }
+      setIsLoading(false);
     };
     loadData();
   }, [toast]);
@@ -220,37 +243,57 @@ export default function Home() {
   };
 
   const handleSave = async () => {
-    if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-      toast({
-        title: "セーブ機能は利用できません",
-        description: "Firebaseの設定がありません。",
-      });
-      return;
-    }
+    const hasFirebaseConfig = !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
-    const beingRef = doc(db, "beings", BEING_ID);
-    const dataToSave = {
-      ...being,
-      tasks,
-      conversation,
-      statsHistory,
-      sleepCount,
-      evolutionStage,
-      evolutionType,
-    };
-    try {
-      await setDoc(beingRef, dataToSave);
-      toast({
-        title: "セーブしました！",
-        description: "ぴよちゃんの記録を保存しました。",
-      });
-    } catch (error) {
-      console.error("Error saving data to Firestore: ", error);
-      toast({
-        variant: "destructive",
-        title: "セーブに失敗しました",
-        description: "記録を保存できませんでした。",
-      });
+    if (hasFirebaseConfig) {
+      const beingRef = doc(db, "beings", BEING_ID);
+      const dataToSave = {
+        ...being,
+        tasks,
+        conversation,
+        statsHistory,
+        sleepCount,
+        evolutionStage,
+        evolutionType,
+      };
+      try {
+        await setDoc(beingRef, dataToSave);
+        toast({
+          title: "セーブしました！",
+          description: "ぴよちゃんの記録をクラウドに保存しました。",
+        });
+      } catch (error) {
+        console.error("Error saving data to Firestore: ", error);
+        toast({
+          variant: "destructive",
+          title: "セーブに失敗しました",
+          description: "記録をクラウドに保存できませんでした。",
+        });
+      }
+    } else {
+      const dataToSave = {
+        being,
+        tasks,
+        conversation,
+        statsHistory,
+        sleepCount,
+        evolutionStage,
+        evolutionType,
+      };
+      try {
+        localStorage.setItem(BEING_ID, JSON.stringify(dataToSave));
+        toast({
+          title: "ローカルに保存しました",
+          description: "ぴよちゃんの記録をブラウザに保存しました。",
+        });
+      } catch (error) {
+        console.error("Error saving to localStorage", error);
+        toast({
+          variant: "destructive",
+          title: "セーブに失敗しました",
+          description: "ブラウザに記録を保存できませんでした。",
+        });
+      }
     }
   };
   
@@ -277,7 +320,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [updateStat]);
 
-  if (isLoading && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground font-body p-4 lg:p-8 animate-pulse">
         <header className="flex justify-between items-center mb-6">
