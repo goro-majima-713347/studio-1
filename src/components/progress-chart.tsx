@@ -8,9 +8,9 @@ import {
 
 export function ProgressChart({ data }) {
     const chartConfig = {
-      hunger: { label: "Hunger", color: "hsl(var(--accent))" },
-      happiness: { label: "Happiness", color: "hsl(var(--primary))" },
-      energy: { label: "Energy", color: "hsl(var(--chart-4))" },
+      hunger: { label: "おなか", color: "hsl(var(--accent))" },
+      happiness: { label: "きげん", color: "hsl(var(--primary))" },
+      energy: { label: "げんき", color: "hsl(var(--chart-4))" },
     }
 
   return (

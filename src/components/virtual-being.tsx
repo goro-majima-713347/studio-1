@@ -22,8 +22,8 @@ export function VirtualBeing({ name, color }) {
         />
         <Image
           src="https://placehold.co/250x250.png"
-          alt="A cute virtual being"
-          data-ai-hint="cute creature"
+          alt="A cute chick"
+          data-ai-hint="cute chick"
           width={250}
           height={250}
           className="rounded-full relative z-10"

@@ -37,7 +37,7 @@ export function InteractionPanel({ beingName, personality, conversation, onNewMe
       onNewMessage({ sender: "being", text: aiResponse.response });
     } catch (error) {
       console.error(error);
-      onNewMessage({ sender: "being", text: "I... I don't feel like talking right now." });
+      onNewMessage({ sender: "being", text: "うーん、今はちょっと話したい気分じゃないかも…" });
     } finally {
       setIsThinking(false);
     }
@@ -48,7 +48,7 @@ export function InteractionPanel({ beingName, personality, conversation, onNewMe
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          <span>Talk with {beingName}</span>
+          <span>{beingName}と話す</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col gap-4 overflow-hidden">
@@ -90,7 +90,7 @@ export function InteractionPanel({ beingName, personality, conversation, onNewMe
         <form onSubmit={handleSubmit} className="flex gap-2 items-center">
           <Input
             type="text"
-            placeholder="Say something..."
+            placeholder="何か話しかけてみて..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isThinking}

@@ -17,9 +17,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 
 const initialStats = { hunger: 70, happiness: 80, energy: 60 };
 const initialTasks = [
-  { id: 1, text: "Read a book for 15 minutes", completed: false },
-  { id: 2, text: "Solve a puzzle", completed: false },
-  { id: 3, text: "Practice a new skill", completed: true },
+  { id: 1, text: "15分間本を読む", completed: false },
+  { id: 2, text: "パズルを解く", completed: false },
+  { id: 3, text: "新しいスキルを練習する", completed: true },
 ];
 
 const initialStatsHistory = [
@@ -33,14 +33,14 @@ const initialStatsHistory = [
 export default function Home() {
   const { toast } = useToast();
   const [being, setBeing] = useState({
-    name: "Aether",
-    personality: "Curious, gentle, and a bit shy. Loves learning new things.",
+    name: "ぴよちゃん",
+    personality: "元気いっぱいのひよこ。おしゃべりと探検が大好き！",
     color: "primary",
     stats: initialStats,
   });
   const [tasks, setTasks] = useState(initialTasks);
   const [conversation, setConversation] = useState([
-    { sender: "being", text: `Hello! I'm ${being.name}. It's nice to meet you.` },
+    { sender: "being", text: `こんにちは！ぼく、ぴよちゃんだよ。これからよろしくね！` },
   ]);
   const [statsHistory, setStatsHistory] = useState(initialStatsHistory);
 
@@ -66,15 +66,15 @@ export default function Home() {
     switch (action) {
       case "feed":
         statChanges = { hunger: 20, happiness: 5, energy: -5 };
-        toastTitle = "Yummy!";
+        toastTitle = "おいしい！";
         break;
       case "play":
         statChanges = { hunger: -10, happiness: 20, energy: -15 };
-        toastTitle = "That was fun!";
+        toastTitle = "楽しかった！";
         break;
       case "sleep":
         statChanges = { hunger: -5, happiness: 5, energy: 40 };
-        toastTitle = "Good morning!";
+        toastTitle = "おはよう！";
         break;
       default:
         return;
@@ -86,7 +86,7 @@ export default function Home() {
 
     toast({
       title: toastTitle,
-      description: `${being.name} feels a little different now.`,
+      description: `${being.name}の様子が少し変わったよ。`,
     });
   };
 
@@ -100,8 +100,8 @@ export default function Home() {
     if (task && !task.completed) {
       updateStat("happiness", 15);
       toast({
-        title: "Task Complete!",
-        description: `${being.name} is proud of their achievement!`,
+        title: "タスク完了！",
+        description: `${being.name}は達成して誇らしい気持ち！`,
       });
     }
   };
@@ -121,8 +121,8 @@ export default function Home() {
       color: newColor,
     }));
     toast({
-      title: "Changes Saved!",
-      description: `${being.name} has a new look and feel!`,
+      title: "変更を保存しました！",
+      description: `${being.name}の見た目や性格が変わったよ！`,
     });
   };
 
@@ -141,7 +141,7 @@ export default function Home() {
       <header className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-4xl font-headline font-bold text-primary-foreground/90">NurtureVerse</h1>
-          <p className="text-muted-foreground font-headline">A new friend awaits you.</p>
+          <p className="text-muted-foreground font-headline">新しいおともだちが、あなたを待っています。</p>
         </div>
         <div className="flex items-center gap-2">
            <Sheet>
@@ -153,7 +153,7 @@ export default function Home() {
              </SheetTrigger>
              <SheetContent>
                 <SheetHeader>
-                  <SheetTitle>Stats History</SheetTitle>
+                  <SheetTitle>これまでの記録</SheetTitle>
                 </SheetHeader>
                 <div className="mt-4">
                   <ProgressChart data={statsHistory} />

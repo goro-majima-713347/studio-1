@@ -19,22 +19,22 @@ export function StatsPanel({ stats }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Current State</CardTitle>
+        <CardTitle>今の状態</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <StatItem
           icon={<Utensils className="h-5 w-5 text-accent" />}
-          label="Hunger"
+          label="おなか"
           value={stats.hunger}
         />
         <StatItem
           icon={<Heart className="h-5 w-5 text-accent" />}
-          label="Happiness"
+          label="きげん"
           value={stats.happiness}
         />
         <StatItem
           icon={<Zap className="h-5 w-5 text-accent" />}
-          label="Energy"
+          label="げんき"
           value={stats.energy}
         />
       </CardContent>

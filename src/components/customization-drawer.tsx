@@ -18,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 const colors = [
-  { id: 'primary', name: 'Purple', class: 'bg-primary' },
-  { id: 'accent', name: 'Pink', class: 'bg-accent' },
-  { id: 'blue', name: 'Blue', class: 'bg-blue-500' },
-  { id: 'green', name: 'Green', class: 'bg-green-500' },
+  { id: 'primary', name: 'きいろ', class: 'bg-primary' },
+  { id: 'accent', name: 'ももいろ', class: 'bg-accent' },
+  { id: 'blue', name: 'みずいろ', class: 'bg-blue-500' },
+  { id: 'green', name: 'みどり', class: 'bg-green-500' },
 ];
 
 export function CustomizationDrawer({ being, onSave, trigger }) {
@@ -40,15 +40,15 @@ export function CustomizationDrawer({ being, onSave, trigger }) {
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Customize Your Being</SheetTitle>
+          <SheetTitle>カスタマイズ</SheetTitle>
           <SheetDescription>
-            Make changes to your friend's appearance and personality.
+            おともだちの見た目や性格を変えられます。
           </SheetDescription>
         </SheetHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
-              Name
+              なまえ
             </Label>
             <Input
               id="name"
@@ -59,7 +59,7 @@ export function CustomizationDrawer({ being, onSave, trigger }) {
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="personality" className="text-right pt-2">
-              Personality
+              せいかく
             </Label>
             <Textarea
               id="personality"
@@ -71,7 +71,7 @@ export function CustomizationDrawer({ being, onSave, trigger }) {
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">
-              Color
+              いろ
             </Label>
             <div className="col-span-3 flex gap-2">
                 {colors.map((c) => (
@@ -92,9 +92,9 @@ export function CustomizationDrawer({ being, onSave, trigger }) {
         </div>
         <SheetFooter>
           <SheetClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">キャンセル</Button>
           </SheetClose>
-          <Button onClick={handleSave}>Save changes</Button>
+          <Button onClick={handleSave}>変更を保存</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>

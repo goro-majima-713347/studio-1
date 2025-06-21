@@ -14,15 +14,15 @@ import {z} from 'genkit';
 const GenerateUniqueResponseInputSchema = z.object({
   personalityTraits: z
     .string()
-    .describe("The personality traits of the virtual being."),
-  userInput: z.string().describe('The user input to the virtual being.'),
+    .describe("バーチャルな存在の性格。"),
+  userInput: z.string().describe('バーチャルな存在へのユーザー入力。'),
 });
 export type GenerateUniqueResponseInput = z.infer<
   typeof GenerateUniqueResponseInputSchema
 >;
 
 const GenerateUniqueResponseOutputSchema = z.object({
-  response: z.string().describe('The unique response from the virtual being.'),
+  response: z.string().describe('バーチャルな存在からのユニークな返答。'),
 });
 export type GenerateUniqueResponseOutput = z.infer<
   typeof GenerateUniqueResponseOutputSchema
@@ -38,7 +38,7 @@ const prompt = ai.definePrompt({
   name: 'generateUniqueResponsePrompt',
   input: {schema: GenerateUniqueResponseInputSchema},
   output: {schema: GenerateUniqueResponseOutputSchema},
-  prompt: `You are a virtual being with the following personality traits: {{{personalityTraits}}}. Respond to the following user input with a unique response that reflects your personality:\n\nUser Input: {{{userInput}}}`,
+  prompt: `あなたは、{{{personalityTraits}}}という性格のバーチャルな存在です。あなたの性格を反映したユニークな返答を、次のユーザー入力に対して生成してください:\n\nユーザー入力: {{{userInput}}}`,
 });
 
 const generateUniqueResponseFlow = ai.defineFlow(
