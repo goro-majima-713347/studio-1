@@ -44,7 +44,7 @@ export default function Home() {
   ]);
   const [statsHistory, setStatsHistory] = useState(initialStatsHistory);
   const [sleepCount, setSleepCount] = useState(0);
-  const [isEvolved, setIsEvolved] = useState(false);
+  const [evolutionStage, setEvolutionStage] = useState(0);
 
   const updateStat = useCallback((stat, value) => {
     setBeing(prev => {
@@ -79,8 +79,26 @@ export default function Home() {
         setSleepCount(newSleepCount);
         statChanges = { hunger: -5, happiness: 5, energy: 40 };
 
-        if (newSleepCount >= 5 && !isEvolved) {
-          setIsEvolved(true);
+        if (newSleepCount >= 10 && evolutionStage < 2) {
+          setEvolutionStage(2);
+          updateStat("hunger", statChanges.hunger);
+          updateStat("happiness", statChanges.happiness);
+          updateStat("energy", statChanges.energy);
+          setBeing(prev => ({
+            ...prev,
+            name: "ニワトリキング",
+            personality: "威厳あふれるニワトリの王。風格が漂う。",
+          }));
+          toast({
+            title: "さらなる進化！",
+            description: `コケこっこが、威厳あるニワトリキングに進化した！`,
+            duration: 5000,
+          });
+          return;
+        }
+
+        if (newSleepCount >= 5 && evolutionStage < 1) {
+          setEvolutionStage(1);
           updateStat("hunger", statChanges.hunger);
           updateStat("happiness", statChanges.happiness);
           updateStat("energy", statChanges.energy);
@@ -206,7 +224,7 @@ export default function Home() {
         </div>
         
         <div className="lg:col-span-1 flex flex-col items-center justify-center order-first lg:order-none">
-          <VirtualBeing name={being.name} color={being.color} isEvolved={isEvolved} />
+          <VirtualBeing name={being.name} color={being.color} evolutionStage={evolutionStage} />
         </div>
         
         <div className="lg:col-span-1">

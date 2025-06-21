@@ -10,14 +10,27 @@ const colors = {
   green: "bg-green-500/20",
 };
 
-export function VirtualBeing({ name, color, isEvolved }) {
+export function VirtualBeing({ name, color, evolutionStage }) {
   const colorClass = colors[color] || colors.primary;
 
-  const imageSrc = isEvolved ? "https://placehold.co/300x300.png" : "https://placehold.co/250x250.png";
-  const imageAlt = isEvolved ? "A majestic chicken" : "A cute chick";
-  const imageHint = isEvolved ? "majestic chicken" : "cute chick";
-  const imageSize = isEvolved ? 300 : 250;
+  let imageSrc, imageAlt, imageHint, imageSize;
 
+  if (evolutionStage === 2) {
+    imageSrc = "https://placehold.co/350x350.png";
+    imageAlt = "A king chicken with a crown";
+    imageHint = "king chicken";
+    imageSize = 350;
+  } else if (evolutionStage === 1) {
+    imageSrc = "https://placehold.co/300x300.png";
+    imageAlt = "A majestic chicken";
+    imageHint = "majestic chicken";
+    imageSize = 300;
+  } else {
+    imageSrc = "https://placehold.co/250x250.png";
+    imageAlt = "A cute chick";
+    imageHint = "cute chick";
+    imageSize = 250;
+  }
 
   return (
     <div className="flex flex-col items-center gap-4">
