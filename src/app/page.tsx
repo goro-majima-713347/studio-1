@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -45,6 +44,14 @@ const initialStatsHistory = [
   { time: "now", ...initialStats },
 ];
 
+const hasFullFirebaseConfig =
+  !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+  !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+  !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+  !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
+  !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
+  !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
+
 const BEING_ID = "piyo-chan-01";
 
 export default function Home() {
@@ -62,7 +69,7 @@ export default function Home() {
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      const hasFirebaseConfig = !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      const hasFirebaseConfig = hasFullFirebaseConfig;
 
       if (hasFirebaseConfig) {
         console.log("Loading data from Firestore...");
@@ -250,7 +257,7 @@ export default function Home() {
   };
 
   const handleSave = async () => {
-    const hasFirebaseConfig = !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const hasFirebaseConfig = hasFullFirebaseConfig;
 
     if (hasFirebaseConfig) {
       const beingRef = doc(db, "beings", BEING_ID);
