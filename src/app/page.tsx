@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { Settings, BarChart } from "lucide-react";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 import { VirtualBeing } from "@/components/virtual-being";
 import { StatsPanel } from "@/components/stats-panel";
@@ -14,6 +16,7 @@ import { ProgressChart } from "@/components/progress-chart";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const initialStats = { hunger: 70, happiness: 80, energy: 60 };
 const initialTasks = [
@@ -29,6 +32,8 @@ const initialStatsHistory = [
   { time: "15m ago", hunger: 72, happiness: 78, energy: 58 },
   { time: "now", ...initialStats },
 ];
+
+const BEING_ID = "piyo-chan-01";
 
 export default function Home() {
   const { toast } = useToast();
@@ -46,6 +51,78 @@ export default function Home() {
   const [sleepCount, setSleepCount] = useState(0);
   const [evolutionStage, setEvolutionStage] = useState(0);
   const [evolutionType, setEvolutionType] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+        console.warn("Firebase config not found, using local state.");
+        setIsLoading(false);
+        return;
+      }
+      
+      const beingRef = doc(db, "beings", BEING_ID);
+      try {
+        const docSnap = await getDoc(beingRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setBeing({
+            name: data.name,
+            personality: data.personality,
+            color: data.color,
+            stats: data.stats,
+          });
+          setTasks(data.tasks || initialTasks);
+          setConversation(data.conversation || [{ sender: "being", text: "おかえり！また会えてうれしいな！" }]);
+          setStatsHistory(data.statsHistory || initialStatsHistory);
+          setSleepCount(data.sleepCount || 0);
+          setEvolutionStage(data.evolutionStage || 0);
+          setEvolutionType(data.evolutionType || null);
+        } else {
+          console.log("No existing data, initializing a new being in Firestore.");
+        }
+      } catch (error) {
+        console.error("Error loading data from Firestore: ", error);
+        toast({
+          variant: "destructive",
+          title: "データの読み込みに失敗しました",
+          description: "保存された記録を読み込めませんでした。",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [toast]);
+
+  useEffect(() => {
+    if (isLoading || !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+      return;
+    }
+    const saveData = async () => {
+      const beingRef = doc(db, "beings", BEING_ID);
+      const dataToSave = {
+        ...being,
+        tasks,
+        conversation,
+        statsHistory,
+        sleepCount,
+        evolutionStage,
+        evolutionType,
+      };
+      try {
+        await setDoc(beingRef, dataToSave);
+      } catch (error) {
+        console.error("Error saving data to Firestore: ", error);
+        toast({
+          variant: "destructive",
+          title: "セーブに失敗しました",
+          description: "記録を保存できませんでした。",
+        });
+      }
+    };
+    saveData();
+  }, [being, tasks, conversation, statsHistory, sleepCount, evolutionStage, evolutionType, isLoading, toast]);
 
   const updateStat = useCallback((stat, value) => {
     setBeing(prev => {
@@ -54,7 +131,6 @@ export default function Home() {
       
       setStatsHistory(prevHistory => {
           const newEntry = { time: "now", ...newStats };
-          // Keep history to a reasonable length
           return [...prevHistory.slice(-9), newEntry];
       });
 
@@ -190,10 +266,37 @@ export default function Home() {
       updateStat("hunger", -2);
       updateStat("happiness", -1);
       updateStat("energy", -1);
-    }, 60000); // Decrease stats every minute
+    }, 60000); 
 
     return () => clearInterval(interval);
   }, [updateStat]);
+
+  if (isLoading && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    return (
+      <div className="min-h-screen bg-background text-foreground font-body p-4 lg:p-8 animate-pulse">
+        <header className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-4xl font-headline font-bold text-primary-foreground/90">NurtureVerse</h1>
+            <p className="text-muted-foreground font-headline">新しいおともだちが、あなたを待っています。</p>
+          </div>
+        </header>
+        <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-8">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-36 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+          <div className="lg:col-span-1 flex flex-col items-center justify-center order-first lg:order-none">
+            <Skeleton className="h-64 w-64 rounded-full" />
+            <Skeleton className="h-9 w-48 mt-4" />
+          </div>
+          <div className="lg:col-span-1">
+            <Skeleton className="h-full w-full min-h-[400px]" />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground font-body p-4 lg:p-8">
