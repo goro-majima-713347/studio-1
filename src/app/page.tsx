@@ -45,6 +45,7 @@ export default function Home() {
   const [statsHistory, setStatsHistory] = useState(initialStatsHistory);
   const [sleepCount, setSleepCount] = useState(0);
   const [evolutionStage, setEvolutionStage] = useState(0);
+  const [evolutionType, setEvolutionType] = useState(null);
 
   const updateStat = useCallback((stat, value) => {
     setBeing(prev => {
@@ -84,16 +85,32 @@ export default function Home() {
           updateStat("hunger", statChanges.hunger);
           updateStat("happiness", statChanges.happiness);
           updateStat("energy", statChanges.energy);
-          setBeing(prev => ({
-            ...prev,
-            name: "ニワトリキング",
-            personality: "威厳あふれるニワトリの王。風格が漂う。",
-          }));
-          toast({
-            title: "さらなる進化！",
-            description: `コケこっこが、威厳あるニワトリキングに進化した！`,
-            duration: 5000,
-          });
+
+          if (being.stats.happiness > 80) {
+            setEvolutionType('queen');
+            setBeing(prev => ({
+              ...prev,
+              name: "ニワトリクイーン",
+              personality: "優雅で気品のあるニワトリの女王。みんなに優しい。",
+            }));
+            toast({
+              title: "究極の進化！",
+              description: `コケこっこが、気品あふれるニワトリクイーンに進化した！`,
+              duration: 5000,
+            });
+          } else {
+            setEvolutionType('king');
+            setBeing(prev => ({
+              ...prev,
+              name: "ニワトリキング",
+              personality: "威厳あふれるニワトリの王。風格が漂う。",
+            }));
+            toast({
+              title: "さらなる進化！",
+              description: `コケこっこが、威厳あるニワトリキングに進化した！`,
+              duration: 5000,
+            });
+          }
           return;
         }
 
@@ -224,7 +241,7 @@ export default function Home() {
         </div>
         
         <div className="lg:col-span-1 flex flex-col items-center justify-center order-first lg:order-none">
-          <VirtualBeing name={being.name} color={being.color} evolutionStage={evolutionStage} />
+          <VirtualBeing name={being.name} color={being.color} evolutionStage={evolutionStage} evolutionType={evolutionType} />
         </div>
         
         <div className="lg:col-span-1">

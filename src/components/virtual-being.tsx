@@ -10,16 +10,23 @@ const colors = {
   green: "bg-green-500/20",
 };
 
-export function VirtualBeing({ name, color, evolutionStage }) {
+export function VirtualBeing({ name, color, evolutionStage, evolutionType }) {
   const colorClass = colors[color] || colors.primary;
 
   let imageSrc, imageAlt, imageHint, imageSize;
 
   if (evolutionStage === 2) {
-    imageSrc = "https://placehold.co/350x350.png";
-    imageAlt = "A king chicken with a crown";
-    imageHint = "king chicken";
-    imageSize = 350;
+    if (evolutionType === 'queen') {
+      imageSrc = "https://placehold.co/350x350.png";
+      imageAlt = "A queen chicken with a tiara";
+      imageHint = "queen chicken";
+      imageSize = 350;
+    } else { // king or default
+      imageSrc = "https://placehold.co/350x350.png";
+      imageAlt = "A king chicken with a crown";
+      imageHint = "king chicken";
+      imageSize = 350;
+    }
   } else if (evolutionStage === 1) {
     imageSrc = "https://placehold.co/300x300.png";
     imageAlt = "A majestic chicken";
