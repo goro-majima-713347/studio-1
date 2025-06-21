@@ -43,6 +43,8 @@ export default function Home() {
     { sender: "being", text: `こんにちは！ぼく、ぴよちゃんだよ。これからよろしくね！` },
   ]);
   const [statsHistory, setStatsHistory] = useState(initialStatsHistory);
+  const [sleepCount, setSleepCount] = useState(0);
+  const [isEvolved, setIsEvolved] = useState(false);
 
   const updateStat = useCallback((stat, value) => {
     setBeing(prev => {
@@ -72,10 +74,32 @@ export default function Home() {
         statChanges = { hunger: -10, happiness: 20, energy: -15 };
         toastTitle = "楽しかった！";
         break;
-      case "sleep":
+      case "sleep": {
+        const newSleepCount = sleepCount + 1;
+        setSleepCount(newSleepCount);
         statChanges = { hunger: -5, happiness: 5, energy: 40 };
+
+        if (newSleepCount >= 5 && !isEvolved) {
+          setIsEvolved(true);
+          updateStat("hunger", statChanges.hunger);
+          updateStat("happiness", statChanges.happiness);
+          updateStat("energy", statChanges.energy);
+          setBeing(prev => ({
+            ...prev,
+            name: "コケこっこ",
+            personality: "りっぱなニワトリに成長した！自信に満ちあふれている。",
+          }));
+          toast({
+            title: "おめでとう！",
+            description: `ぴよちゃんが、りっぱなニワトリに進化した！`,
+            duration: 5000,
+          });
+          return;
+        }
+        
         toastTitle = "おはよう！";
         break;
+      }
       default:
         return;
     }
@@ -182,7 +206,7 @@ export default function Home() {
         </div>
         
         <div className="lg:col-span-1 flex flex-col items-center justify-center order-first lg:order-none">
-          <VirtualBeing name={being.name} color={being.color} />
+          <VirtualBeing name={being.name} color={being.color} isEvolved={isEvolved} />
         </div>
         
         <div className="lg:col-span-1">
