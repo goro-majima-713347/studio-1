@@ -20,13 +20,14 @@ export function ProgressChart({ data }) {
             <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="time" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false}/>
+                <YAxis yAxisId="percent" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false}/>
+                <YAxis yAxisId="strength" orientation="right" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} />
                 <Tooltip content={<ChartTooltipContent />} />
                 <Legend />
-                <Line type="monotone" dataKey="hunger" stroke={chartConfig.hunger.color} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="happiness" stroke={chartConfig.happiness.color} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="energy" stroke={chartConfig.energy.color} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="strength" stroke={chartConfig.strength.color} strokeWidth={2} dot={false} />
+                <Line yAxisId="percent" type="monotone" dataKey="hunger" stroke={chartConfig.hunger.color} strokeWidth={2} dot={false} />
+                <Line yAxisId="percent" type="monotone" dataKey="happiness" stroke={chartConfig.happiness.color} strokeWidth={2} dot={false} />
+                <Line yAxisId="percent" type="monotone" dataKey="energy" stroke={chartConfig.energy.color} strokeWidth={2} dot={false} />
+                <Line yAxisId="strength" type="monotone" dataKey="strength" stroke={chartConfig.strength.color} strokeWidth={2} dot={false} />
             </LineChart>
         </ResponsiveContainer>
     </ChartContainer>

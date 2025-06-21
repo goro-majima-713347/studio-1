@@ -131,7 +131,15 @@ export default function Home() {
 
   const updateStat = useCallback((stat, value) => {
     setBeing(prev => {
-      const newStatValue = Math.max(0, Math.min(100, (prev.stats[stat] ?? 0) + value));
+      const currentStat = prev.stats[stat] ?? 0;
+      let newStatValue;
+      
+      if (stat === 'strength') {
+        newStatValue = Math.max(0, currentStat + value);
+      } else {
+        newStatValue = Math.max(0, Math.min(100, currentStat + value));
+      }
+
       const newStats = { ...prev.stats, [stat]: newStatValue };
       
       setStatsHistory(prevHistory => {
@@ -148,10 +156,18 @@ export default function Home() {
     let toastTitle;
 
     switch (action) {
-      case "feed":
+      case "feed": {
+        if (being.stats.hunger >= 100) {
+          toast({
+            title: "おなかいっぱい！",
+            description: `${being.name}はもうおなかがいっぱいのようだ。`,
+          });
+          return;
+        }
         statChanges = { hunger: 20, happiness: 5, energy: -5, strength: 10 };
         toastTitle = "おいしい！";
         break;
+      }
       case "play":
         statChanges = { hunger: -10, happiness: 20, energy: -15 };
         toastTitle = "楽しかった！";

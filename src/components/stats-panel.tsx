@@ -2,16 +2,16 @@ import { Heart, Utensils, Zap, Sword } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
-const StatItem = ({ icon, label, value }) => (
+const StatItem = ({ icon, label, value, isNumeric = false }) => (
   <div className="space-y-2">
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
         {icon}
         <span className="font-medium">{label}</span>
       </div>
-      <span className="font-mono text-sm text-muted-foreground">{value}%</span>
+      <span className="font-mono text-sm text-muted-foreground">{value}{!isNumeric && '%'}</span>
     </div>
-    <Progress value={value} />
+    {!isNumeric && <Progress value={value} />}
   </div>
 );
 
@@ -41,6 +41,7 @@ export function StatsPanel({ stats }) {
           icon={<Sword className="h-5 w-5 text-accent" />}
           label="つよさ"
           value={stats.strength ?? 0}
+          isNumeric={true}
         />
       </CardContent>
     </Card>
