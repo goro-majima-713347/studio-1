@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Settings, BarChart, Save, Bug } from "lucide-react";
+import { Settings, BarChart, Save, Bug, FastForward } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -439,6 +439,46 @@ export default function Home() {
     });
   };
 
+  const handleDebugTimeSkip = () => {
+    let tempBeing = JSON.parse(JSON.stringify(being));
+    let tempStatsHistory = [...statsHistory];
+    const now = new Date();
+
+    for (let i = 1; i <= 10; i++) {
+      const decay = { hunger: -2, happiness: -1, energy: -1 };
+      if (droppings.length > 0) {
+        decay.health = -5 * droppings.length;
+      }
+      
+      const newStats = { ...tempBeing.stats };
+      for (const stat in decay) {
+        const value = decay[stat];
+        const currentStat = newStats[stat] ?? 0;
+        if (stat === 'strength') {
+          newStats[stat] = Math.max(0, currentStat + value);
+        } else {
+          newStats[stat] = Math.max(0, Math.min(100, currentStat + value));
+        }
+      }
+      tempBeing.stats = newStats;
+      
+      const futureTime = new Date(now.getTime() + i * 60000);
+      const newEntry = { 
+        time: futureTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), 
+        ...tempBeing.stats 
+      };
+      tempStatsHistory.push(newEntry);
+    }
+    
+    setBeing(tempBeing);
+    setStatsHistory(tempStatsHistory.slice(-100));
+    
+    toast({
+      title: "デバッグ実行！",
+      description: "時間を10分進めました。",
+    });
+  };
+
   const handleTaskToggle = (taskId) => {
     const newTasks = tasks.map(task =>
       task.id === taskId ? { ...task, completed: !task.completed } : task
@@ -600,6 +640,10 @@ export default function Home() {
            <Button variant="ghost" size="icon" onClick={handleDebugRun}>
              <Bug className="h-5 w-5" />
              <span className="sr-only">デバッグ実行</span>
+           </Button>
+           <Button variant="ghost" size="icon" onClick={handleDebugTimeSkip}>
+             <FastForward className="h-5 w-5" />
+             <span className="sr-only">時間を進める</span>
            </Button>
            <Button variant="ghost" size="icon" onClick={handleSave}>
              <Save className="h-5 w-5" />
