@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -12,7 +13,7 @@ const colors = {
   green: "bg-green-500/20",
 };
 
-export function VirtualBeing({ name, color, evolutionStage, evolutionType, imageUrl, onGenerateImage, isGeneratingImage }) {
+export function VirtualBeing({ name, color, evolutionStage, evolutionType, imageUrl, onGenerateImage, isGeneratingImage, droppings }) {
   const colorClass = colors[color] || colors.primary;
 
   let placeholderSrc, imageAlt, imageHint, imageSize, generationPrompt;
@@ -49,20 +50,33 @@ export function VirtualBeing({ name, color, evolutionStage, evolutionType, image
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="relative animate-float">
-        <div 
-          className={cn("absolute inset-0 rounded-full blur-2xl", colorClass)}
-          style={{ transform: 'scale(1.2)'}}
-        />
-        <Image
-          src={imageToDisplay}
-          alt={imageAlt}
-          data-ai-hint={imageHint}
-          width={imageSize}
-          height={imageSize}
-          className="rounded-full relative z-10 object-cover aspect-square"
-          priority
-        />
+      <div className="relative" style={{ width: 350, height: 350 }}>
+          <div className="absolute inset-0 flex items-center justify-center animate-float">
+            <div className="relative">
+              <div 
+                className={cn("absolute rounded-full blur-2xl", colorClass)}
+                style={{ width: imageSize, height: imageSize, transform: 'scale(1.2)'}}
+              />
+              <Image
+                src={imageToDisplay}
+                alt={imageAlt}
+                data-ai-hint={imageHint}
+                width={imageSize}
+                height={imageSize}
+                className="rounded-full relative z-10 object-cover aspect-square"
+                priority
+              />
+            </div>
+          </div>
+
+        {droppings && droppings.map(dropping => (
+            <div key={dropping.id} className="absolute z-20" style={dropping.style}>
+                <svg width="25" height="25" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 10 C 20 25, 20 70, 50 90 C 80 70, 80 25, 50 10" fill="#A0522D" transform="rotate(15 50 50)"/>
+                    <path d="M50 20 C 30 35, 30 65, 50 80 C 70 65, 70 35, 50 20" fill="#8B4513" transform="rotate(15 50 50)"/>
+                </svg>
+            </div>
+        ))}
       </div>
       <h2 className="text-3xl font-bold font-headline text-primary-foreground/90">{name}</h2>
        <Button

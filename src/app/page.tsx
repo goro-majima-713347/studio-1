@@ -20,7 +20,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Skeleton } from "@/components/ui/skeleton";
 import { handleImageGeneration } from "@/app/actions";
 
-const initialStats = { hunger: 70, happiness: 80, energy: 60, strength: 50 };
+const initialStats = { hunger: 70, happiness: 80, energy: 60, strength: 50, health: 100 };
 const initialBeing = {
   name: "ぴよちゃん",
   personality: "元気いっぱいのひよこ。おしゃべりと探検が大好き！",
@@ -39,10 +39,10 @@ const initialConversation = [
 ];
 
 const initialStatsHistory = [
-  { time: "1h ago", hunger: 70, happiness: 80, energy: 60, strength: 48 },
-  { time: "45m ago", hunger: 65, happiness: 85, energy: 62, strength: 49 },
-  { time: "30m ago", hunger: 75, happiness: 82, energy: 55, strength: 49 },
-  { time: "15m ago", hunger: 72, happiness: 78, energy: 58, strength: 50 },
+  { time: "1h ago", ...initialStats, strength: 48 },
+  { time: "45m ago", ...initialStats, hunger: 65, happiness: 85, energy: 62, strength: 49 },
+  { time: "30m ago", ...initialStats, hunger: 75, happiness: 82, energy: 55, strength: 49 },
+  { time: "15m ago", ...initialStats, hunger: 72, happiness: 78, energy: 58, strength: 50 },
   { time: "now", ...initialStats },
 ];
 
@@ -67,6 +67,7 @@ export default function Home() {
   const [evolutionType, setEvolutionType] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [droppings, setDroppings] = useState([]);
 
   const updateBeingStats = useCallback((changes: Record<string, number>, otherBeingUpdates: Partial<typeof initialBeing> = {}) => {
     setBeing(prev => {
@@ -120,6 +121,7 @@ export default function Home() {
             setSleepCount(data.sleepCount || 0);
             setEvolutionStage(data.evolutionStage || 0);
             setEvolutionType(data.evolutionType || null);
+            setDroppings(data.droppings || []);
             console.log("Data loaded from Firestore.");
           } else {
             console.log("No existing data in Firestore, initializing a new being.");
@@ -150,6 +152,7 @@ export default function Home() {
             setSleepCount(data.sleepCount || 0);
             setEvolutionStage(data.evolutionStage || 0);
             setEvolutionType(data.evolutionType || null);
+            setDroppings(data.droppings || []);
             console.log("Data loaded from local storage.");
           } else {
             console.log("No data in local storage.");
@@ -164,7 +167,7 @@ export default function Home() {
   }, [toast]);
 
   const handleAction = (action) => {
-    if (evolutionStage === 2) {
+    if (action !== 'clean' && evolutionStage === 2) {
       const newActionCount = (being.actionsSinceFinalEvolution || 0) + 1;
       if (newActionCount >= 10) {
         toast({
@@ -174,18 +177,19 @@ export default function Home() {
         });
         setBeing(prev => ({
           ...initialBeing,
-          color: prev.color, // Keep customized color
+          color: prev.color,
         }));
         setSleepCount(0);
         setEvolutionStage(0);
         setEvolutionType(null);
         setConversation(prev => [...prev, { sender: "being", text: `こんにちは！ぼく、ぴよちゃんだよ。これからよろしくね！` }]);
         setStatsHistory([{ time: new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}), ...initialStats }]);
+        setDroppings([]);
         return;
       }
     }
 
-    const otherBeingUpdates = evolutionStage === 2 ? { actionsSinceFinalEvolution: (being.actionsSinceFinalEvolution || 0) + 1 } : {};
+    const otherBeingUpdates = (action !== 'clean' && evolutionStage === 2) ? { actionsSinceFinalEvolution: (being.actionsSinceFinalEvolution || 0) + 1 } : {};
 
     let toastTitle;
 
@@ -200,6 +204,23 @@ export default function Home() {
         }
         updateBeingStats({ hunger: 20, happiness: 5, energy: -5, strength: 10 }, otherBeingUpdates);
         toastTitle = "おいしい！";
+
+        if (Math.random() < 0.4) { // 40% chance
+            setTimeout(() => {
+                setDroppings(prev => [...prev, {
+                    id: Date.now(),
+                    style: {
+                        left: `${Math.floor(Math.random() * 80) + 10}%`,
+                        bottom: `${Math.floor(Math.random() * 25)}%`,
+                    }
+                }]);
+                toast({
+                    variant: "destructive",
+                    title: "おっと！",
+                    description: `${being.name}が床を汚してしまった！お掃除してあげよう。`,
+                });
+            }, 1000);
+        }
         break;
       }
       case "play":
@@ -264,6 +285,20 @@ export default function Home() {
         toastTitle = "おはよう！";
         break;
       }
+      case "clean": {
+        if (droppings.length === 0) {
+          toast({ title: "おそうじ完了！", description: "周りはすでにきれいです。" });
+          return;
+        }
+        const healthGained = droppings.length * 5;
+        updateBeingStats({ health: healthGained });
+        setDroppings([]);
+        toast({
+          title: "きれいになった！",
+          description: `${being.name}はスッキリして喜んでいる！`,
+        });
+        return;
+      }
       default:
         return;
     }
@@ -280,8 +315,9 @@ export default function Home() {
     let tempEvolutionStage = evolutionStage;
     let tempEvolutionType = evolutionType;
     let tempStatsHistory = [...statsHistory];
+    let tempDroppings = [...droppings];
     
-    const actions = ["feed", "play", "sleep"];
+    const actions = ["feed", "play", "sleep", "clean"];
 
     const applyStatChanges = (changes, otherUpdates = {}) => {
         const newStats = { ...tempBeing.stats };
@@ -310,6 +346,7 @@ export default function Home() {
                 tempSleepCount = 0;
                 tempEvolutionStage = 0;
                 tempEvolutionType = null;
+                tempDroppings = [];
                 continue;
             }
         }
@@ -322,6 +359,15 @@ export default function Home() {
             case "feed": {
                 if (tempBeing.stats.hunger < 100) {
                     applyStatChanges({ hunger: 20, happiness: 5, energy: -5, strength: 10 }, otherUpdates);
+                    if (Math.random() < 0.4) {
+                       tempDroppings.push({
+                           id: Date.now() + i,
+                           style: {
+                               left: `${Math.floor(Math.random() * 80) + 10}%`,
+                               bottom: `${Math.floor(Math.random() * 25)}%`,
+                           }
+                       });
+                    }
                 }
                 break;
             }
@@ -353,6 +399,14 @@ export default function Home() {
                 }
                 break;
             }
+            case "clean": {
+                if (tempDroppings.length > 0) {
+                    const healthGained = tempDroppings.length * 5;
+                    applyStatChanges({ health: healthGained });
+                    tempDroppings = [];
+                }
+                break;
+            }
         }
     }
     
@@ -363,6 +417,7 @@ export default function Home() {
         setEvolutionType(tempEvolutionType);
     }
     setStatsHistory(tempStatsHistory.slice(-100));
+    setDroppings(tempDroppings);
     
     toast({
         title: "デバッグ実行！",
@@ -396,9 +451,7 @@ export default function Home() {
   const handleSave = async () => {
     const hasFirebaseConfig = hasFullFirebaseConfig;
 
-    if (hasFirebaseConfig) {
-      const beingRef = doc(db, "beings", BEING_ID);
-      const dataToSave = {
+    const dataToSave = {
         ...being,
         tasks,
         conversation,
@@ -406,7 +459,11 @@ export default function Home() {
         sleepCount,
         evolutionStage,
         evolutionType,
-      };
+        droppings,
+    };
+
+    if (hasFirebaseConfig) {
+      const beingRef = doc(db, "beings", BEING_ID);
       try {
         await setDoc(beingRef, dataToSave);
         toast({
@@ -422,15 +479,6 @@ export default function Home() {
         });
       }
     } else {
-      const dataToSave = {
-        being,
-        tasks,
-        conversation,
-        statsHistory,
-        sleepCount,
-        evolutionStage,
-        evolutionType,
-      };
       try {
         localStorage.setItem(BEING_ID, JSON.stringify(dataToSave));
         toast({
@@ -490,11 +538,15 @@ export default function Home() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      updateBeingStats({ hunger: -2, happiness: -1, energy: -1 });
+      const decay = { hunger: -2, happiness: -1, energy: -1 };
+      if (droppings.length > 0) {
+        decay.health = -5 * droppings.length;
+      }
+      updateBeingStats(decay);
     }, 60000); 
 
     return () => clearInterval(interval);
-  }, [updateBeingStats]);
+  }, [updateBeingStats, droppings]);
 
   if (isLoading) {
     return (
@@ -585,6 +637,7 @@ export default function Home() {
             imageUrl={being.imageUrl}
             onGenerateImage={handleGenerateImage}
             isGeneratingImage={isGeneratingImage}
+            droppings={droppings}
           />
         </div>
         
