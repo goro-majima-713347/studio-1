@@ -66,6 +66,31 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
+  const updateBeingStats = useCallback((changes: Record<string, number>) => {
+    setBeing(prev => {
+      const newStats = { ...prev.stats };
+      for (const stat in changes) {
+        if (Object.prototype.hasOwnProperty.call(changes, stat)) {
+          const value = changes[stat];
+          const currentStat = newStats[stat] ?? 0;
+          if (stat === 'strength') {
+            newStats[stat] = Math.max(0, currentStat + value);
+          } else {
+            newStats[stat] = Math.max(0, Math.min(100, currentStat + value));
+          }
+        }
+      }
+      
+      setStatsHistory(prevHistory => {
+          const newEntry = { time: new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}), ...newStats };
+          const newHistory = [...prevHistory, newEntry];
+          return newHistory.slice(-100);
+      });
+
+      return { ...prev, stats: newStats };
+    });
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
@@ -129,30 +154,7 @@ export default function Home() {
     loadData();
   }, [toast]);
 
-  const updateStat = useCallback((stat, value) => {
-    setBeing(prev => {
-      const currentStat = prev.stats[stat] ?? 0;
-      let newStatValue;
-      
-      if (stat === 'strength') {
-        newStatValue = Math.max(0, currentStat + value);
-      } else {
-        newStatValue = Math.max(0, Math.min(100, currentStat + value));
-      }
-
-      const newStats = { ...prev.stats, [stat]: newStatValue };
-      
-      setStatsHistory(prevHistory => {
-          const newEntry = { time: "now", ...newStats };
-          return [...prevHistory.slice(-9), newEntry];
-      });
-
-      return { ...prev, stats: newStats };
-    });
-  }, []);
-
   const handleAction = (action) => {
-    let statChanges;
     let toastTitle;
 
     switch (action) {
@@ -164,24 +166,22 @@ export default function Home() {
           });
           return;
         }
-        statChanges = { hunger: 20, happiness: 5, energy: -5, strength: 10 };
+        updateBeingStats({ hunger: 20, happiness: 5, energy: -5, strength: 10 });
         toastTitle = "おいしい！";
         break;
       }
       case "play":
-        statChanges = { hunger: -10, happiness: 20, energy: -15 };
+        updateBeingStats({ hunger: -10, happiness: 20, energy: -15 });
         toastTitle = "楽しかった！";
         break;
       case "sleep": {
         const newSleepCount = sleepCount + 1;
         setSleepCount(newSleepCount);
-        statChanges = { hunger: -5, happiness: 5, energy: 40 };
+        const statChanges = { hunger: -5, happiness: 5, energy: 40 };
 
         if (newSleepCount >= 10 && evolutionStage < 2) {
           setEvolutionStage(2);
-          updateStat("hunger", statChanges.hunger);
-          updateStat("happiness", statChanges.happiness);
-          updateStat("energy", statChanges.energy);
+          updateBeingStats(statChanges);
 
           if (being.stats.happiness > 80) {
             setEvolutionType('queen');
@@ -215,9 +215,7 @@ export default function Home() {
 
         if (newSleepCount >= 5 && evolutionStage < 1) {
           setEvolutionStage(1);
-          updateStat("hunger", statChanges.hunger);
-          updateStat("happiness", statChanges.happiness);
-          updateStat("energy", statChanges.energy);
+          updateBeingStats(statChanges);
           setBeing(prev => ({
             ...prev,
             name: "コケこっこ",
@@ -232,6 +230,7 @@ export default function Home() {
           return;
         }
         
+        updateBeingStats(statChanges);
         toastTitle = "おはよう！";
         break;
       }
@@ -239,12 +238,6 @@ export default function Home() {
         return;
     }
     
-    for (const stat in statChanges) {
-      if (Object.prototype.hasOwnProperty.call(statChanges, stat)) {
-        updateStat(stat, statChanges[stat]);
-      }
-    }
-
     toast({
       title: toastTitle,
       description: `${being.name}の様子が少し変わったよ。`,
@@ -259,7 +252,7 @@ export default function Home() {
 
     const task = tasks.find(t => t.id === taskId);
     if (task && !task.completed) {
-      updateStat("happiness", 15);
+      updateBeingStats({ happiness: 15 });
       toast({
         title: "タスク完了！",
         description: `${being.name}は達成して誇らしい気持ち！`,
@@ -270,7 +263,7 @@ export default function Home() {
   const handleNewMessage = (message) => {
     setConversation(prev => [...prev, message]);
     if(message.sender === 'user') {
-      updateStat('happiness', 5);
+      updateBeingStats({ happiness: 5 });
     }
   };
 
@@ -371,13 +364,11 @@ export default function Home() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      updateStat("hunger", -2);
-      updateStat("happiness", -1);
-      updateStat("energy", -1);
+      updateBeingStats({ hunger: -2, happiness: -1, energy: -1 });
     }, 60000); 
 
     return () => clearInterval(interval);
-  }, [updateStat]);
+  }, [updateBeingStats]);
 
   if (isLoading) {
     return (
