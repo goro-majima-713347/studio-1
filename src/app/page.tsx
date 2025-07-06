@@ -1,8 +1,9 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Settings, BarChart, Save } from "lucide-react";
+import { Settings, BarChart, Save, Bug } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -244,6 +245,93 @@ export default function Home() {
     });
   };
 
+  const handleDebugRun = () => {
+    let tempBeing = JSON.parse(JSON.stringify(being));
+    let tempSleepCount = sleepCount;
+    let tempEvolutionStage = evolutionStage;
+    let tempEvolutionType = evolutionType;
+    let tempStatsHistory = [...statsHistory];
+    
+    const actions = ["feed", "play", "sleep"];
+
+    const applyStatChanges = (changes) => {
+        const newStats = { ...tempBeing.stats };
+        for (const stat in changes) {
+            const value = changes[stat];
+            const currentStat = newStats[stat] ?? 0;
+            if (stat === 'strength') {
+                newStats[stat] = Math.max(0, currentStat + value);
+            } else {
+                newStats[stat] = Math.max(0, Math.min(100, currentStat + value));
+            }
+        }
+        tempBeing.stats = newStats;
+        const newEntry = { time: new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}), ...newStats };
+        tempStatsHistory.push(newEntry);
+    };
+
+    for (let i = 0; i < 10; i++) {
+        const randomAction = actions[Math.floor(Math.random() * actions.length)];
+        
+        switch(randomAction) {
+            case "feed": {
+                if (tempBeing.stats.hunger < 100) {
+                    applyStatChanges({ hunger: 20, happiness: 5, energy: -5, strength: 10 });
+                }
+                break;
+            }
+            case "play": {
+                applyStatChanges({ hunger: -10, happiness: 20, energy: -15 });
+                break;
+            }
+            case "sleep": {
+                const newSleepCount = tempSleepCount + 1;
+                tempSleepCount = newSleepCount;
+                const statChanges = { hunger: -5, happiness: 5, energy: 40 };
+                
+                if (newSleepCount >= 10 && tempEvolutionStage < 2) {
+                    tempEvolutionStage = 2;
+                    applyStatChanges(statChanges);
+
+                    if (tempBeing.stats.happiness > 80) {
+                        tempEvolutionType = 'queen';
+                        tempBeing.name = "ニワトリクイーン";
+                        tempBeing.personality = "優雅で気品のあるニワトリの女王。みんなに優しい。";
+                        tempBeing.imageUrl = null;
+                    } else {
+                        tempEvolutionType = 'king';
+                        tempBeing.name = "ニワトリキング";
+                        tempBeing.personality = "威厳あふれるニワトリの王。風格が漂う。";
+                        tempBeing.imageUrl = null;
+                    }
+                } else if (newSleepCount >= 5 && tempEvolutionStage < 1) {
+                    tempEvolutionStage = 1;
+                    applyStatChanges(statChanges);
+                    tempBeing.name = "コケこっこ";
+                    tempBeing.personality = "りっぱなニワトリに成長した！自信に満ちあふれている。";
+                    tempBeing.imageUrl = null;
+                } else {
+                    applyStatChanges(statChanges);
+                }
+                break;
+            }
+        }
+    }
+    
+    setBeing(tempBeing);
+    setSleepCount(tempSleepCount);
+    setEvolutionStage(tempEvolutionStage);
+    if (tempEvolutionType) {
+        setEvolutionType(tempEvolutionType);
+    }
+    setStatsHistory(tempStatsHistory.slice(-100));
+    
+    toast({
+        title: "デバッグ実行！",
+        description: "お世話を10回ランダムで行いました。",
+    });
+  };
+
   const handleTaskToggle = (taskId) => {
     const newTasks = tasks.map(task =>
       task.id === taskId ? { ...task, completed: !task.completed } : task
@@ -405,6 +493,10 @@ export default function Home() {
           <p className="text-muted-foreground font-headline">新しいおともだちが、あなたを待っています。</p>
         </div>
         <div className="flex items-center gap-2">
+           <Button variant="ghost" size="icon" onClick={handleDebugRun}>
+             <Bug className="h-5 w-5" />
+             <span className="sr-only">デバッグ実行</span>
+           </Button>
            <Button variant="ghost" size="icon" onClick={handleSave}>
              <Save className="h-5 w-5" />
              <span className="sr-only">データを保存</span>
