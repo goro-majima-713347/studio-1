@@ -538,7 +538,7 @@ export default function Home() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const decay = { hunger: -2, happiness: -1, energy: -1 };
+      const decay: Record<string, number> = { hunger: -2, happiness: -1, energy: -1 };
       if (droppings.length > 0) {
         decay.health = -5 * droppings.length;
       }
