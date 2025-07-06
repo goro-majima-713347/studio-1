@@ -290,14 +290,24 @@ export default function Home() {
           toast({ title: "おそうじ完了！", description: "周りはすでにきれいです。" });
           return;
         }
-        const healthGained = droppings.length * 5;
-        updateBeingStats({ health: healthGained });
         setDroppings([]);
         toast({
           title: "きれいになった！",
           description: `${being.name}はスッキリして喜んでいる！`,
         });
         return;
+      }
+      case "medicine": {
+        if (being.stats.health >= 100) {
+          toast({
+            title: "とっても元気！",
+            description: `${being.name}はもう元気いっぱいです。`,
+          });
+          return;
+        }
+        updateBeingStats({ health: 100 - being.stats.health }, otherBeingUpdates);
+        toastTitle = "元気になった！";
+        break;
       }
       default:
         return;
@@ -317,7 +327,7 @@ export default function Home() {
     let tempStatsHistory = [...statsHistory];
     let tempDroppings = [...droppings];
     
-    const actions = ["feed", "play", "sleep", "clean"];
+    const actions = ["feed", "play", "sleep", "clean", "medicine"];
 
     const applyStatChanges = (changes, otherUpdates = {}) => {
         const newStats = { ...tempBeing.stats };
@@ -401,9 +411,13 @@ export default function Home() {
             }
             case "clean": {
                 if (tempDroppings.length > 0) {
-                    const healthGained = tempDroppings.length * 5;
-                    applyStatChanges({ health: healthGained });
                     tempDroppings = [];
+                }
+                break;
+            }
+            case "medicine": {
+                if (tempBeing.stats.health < 100) {
+                    applyStatChanges({ health: 100 - tempBeing.stats.health }, otherUpdates);
                 }
                 break;
             }
