@@ -27,6 +27,7 @@ const initialBeing = {
   color: "primary",
   stats: initialStats,
   imageUrl: null,
+  actionsSinceFinalEvolution: 0,
 };
 const initialTasks = [
   { id: 1, text: "15分間本を読む", completed: false },
@@ -67,7 +68,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
-  const updateBeingStats = useCallback((changes: Record<string, number>) => {
+  const updateBeingStats = useCallback((changes: Record<string, number>, otherBeingUpdates: Partial<typeof initialBeing> = {}) => {
     setBeing(prev => {
       const newStats = { ...prev.stats };
       for (const stat in changes) {
@@ -88,7 +89,7 @@ export default function Home() {
           return newHistory.slice(-100);
       });
 
-      return { ...prev, stats: newStats };
+      return { ...prev, ...otherBeingUpdates, stats: newStats };
     });
   }, []);
 
@@ -105,11 +106,13 @@ export default function Home() {
           if (docSnap.exists()) {
             const data = docSnap.data();
             setBeing({
+              ...initialBeing,
               name: data.name,
               personality: data.personality,
               color: data.color,
               stats: { ...initialStats, ...data.stats },
               imageUrl: data.imageUrl || null,
+              actionsSinceFinalEvolution: data.actionsSinceFinalEvolution || 0,
             });
             setTasks(data.tasks || initialTasks);
             setConversation(data.conversation || [{ sender: "being", text: "おかえり！また会えてうれしいな！" }]);
@@ -135,7 +138,12 @@ export default function Home() {
           const savedData = localStorage.getItem(BEING_ID);
           if (savedData) {
             const data = JSON.parse(savedData);
-            setBeing({ ...initialBeing, ...data.being, stats: { ...initialStats, ...data.being?.stats } });
+            setBeing({
+                ...initialBeing,
+                ...data.being,
+                stats: { ...initialStats, ...data.being?.stats },
+                actionsSinceFinalEvolution: data.being?.actionsSinceFinalEvolution || 0,
+            });
             setTasks(data.tasks || initialTasks);
             setConversation(data.conversation || initialConversation);
             setStatsHistory(data.statsHistory || initialStatsHistory);
@@ -156,6 +164,29 @@ export default function Home() {
   }, [toast]);
 
   const handleAction = (action) => {
+    if (evolutionStage === 2) {
+      const newActionCount = (being.actionsSinceFinalEvolution || 0) + 1;
+      if (newActionCount >= 10) {
+        toast({
+          title: "輪廻転生！",
+          description: `${being.name}は立派な卵を産み、新しいぴよちゃんが誕生しました！`,
+          duration: 5000,
+        });
+        setBeing(prev => ({
+          ...initialBeing,
+          color: prev.color, // Keep customized color
+        }));
+        setSleepCount(0);
+        setEvolutionStage(0);
+        setEvolutionType(null);
+        setConversation(prev => [...prev, { sender: "being", text: `こんにちは！ぼく、ぴよちゃんだよ。これからよろしくね！` }]);
+        setStatsHistory([{ time: new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}), ...initialStats }]);
+        return;
+      }
+    }
+
+    const otherBeingUpdates = evolutionStage === 2 ? { actionsSinceFinalEvolution: (being.actionsSinceFinalEvolution || 0) + 1 } : {};
+
     let toastTitle;
 
     switch (action) {
@@ -167,12 +198,12 @@ export default function Home() {
           });
           return;
         }
-        updateBeingStats({ hunger: 20, happiness: 5, energy: -5, strength: 10 });
+        updateBeingStats({ hunger: 20, happiness: 5, energy: -5, strength: 10 }, otherBeingUpdates);
         toastTitle = "おいしい！";
         break;
       }
       case "play":
-        updateBeingStats({ hunger: -10, happiness: 20, energy: -15 });
+        updateBeingStats({ hunger: -10, happiness: 20, energy: -15 }, otherBeingUpdates);
         toastTitle = "楽しかった！";
         break;
       case "sleep": {
@@ -182,16 +213,15 @@ export default function Home() {
 
         if (newSleepCount >= 10 && evolutionStage < 2) {
           setEvolutionStage(2);
-          updateBeingStats(statChanges);
-
+          let newBeingState: Partial<typeof initialBeing>;
           if (being.stats.happiness > 80) {
             setEvolutionType('queen');
-            setBeing(prev => ({
-              ...prev,
+            newBeingState = {
               name: "ニワトリクイーン",
               personality: "優雅で気品のあるニワトリの女王。みんなに優しい。",
               imageUrl: null,
-            }));
+              actionsSinceFinalEvolution: 0,
+            };
             toast({
               title: "究極の進化！",
               description: `コケこっこが、気品あふれるニワトリクイーンに進化した！`,
@@ -199,30 +229,29 @@ export default function Home() {
             });
           } else {
             setEvolutionType('king');
-            setBeing(prev => ({
-              ...prev,
+            newBeingState = {
               name: "ニワトリキング",
               personality: "威厳あふれるニワトリの王。風格が漂う。",
               imageUrl: null,
-            }));
+              actionsSinceFinalEvolution: 0,
+            };
             toast({
               title: "さらなる進化！",
               description: `コケこっこが、威厳あるニワトリキングに進化した！`,
               duration: 5000,
             });
           }
+          updateBeingStats(statChanges, newBeingState);
           return;
         }
 
         if (newSleepCount >= 5 && evolutionStage < 1) {
           setEvolutionStage(1);
-          updateBeingStats(statChanges);
-          setBeing(prev => ({
-            ...prev,
+          updateBeingStats(statChanges, {
             name: "コケこっこ",
             personality: "りっぱなニワトリに成長した！自信に満ちあふれている。",
             imageUrl: null,
-          }));
+          });
           toast({
             title: "おめでとう！",
             description: `ぴよちゃんが、りっぱなニワトリに進化した！`,
@@ -231,7 +260,7 @@ export default function Home() {
           return;
         }
         
-        updateBeingStats(statChanges);
+        updateBeingStats(statChanges, otherBeingUpdates);
         toastTitle = "おはよう！";
         break;
       }
@@ -254,7 +283,7 @@ export default function Home() {
     
     const actions = ["feed", "play", "sleep"];
 
-    const applyStatChanges = (changes) => {
+    const applyStatChanges = (changes, otherUpdates = {}) => {
         const newStats = { ...tempBeing.stats };
         for (const stat in changes) {
             const value = changes[stat];
@@ -266,22 +295,38 @@ export default function Home() {
             }
         }
         tempBeing.stats = newStats;
+        Object.assign(tempBeing, otherUpdates);
         const newEntry = { time: new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}), ...newStats };
         tempStatsHistory.push(newEntry);
     };
 
     for (let i = 0; i < 10; i++) {
+        if (tempEvolutionStage === 2) {
+            const newActionCount = (tempBeing.actionsSinceFinalEvolution || 0) + 1;
+            if (newActionCount >= 10) {
+                const currentColor = tempBeing.color;
+                tempBeing = JSON.parse(JSON.stringify(initialBeing));
+                tempBeing.color = currentColor;
+                tempSleepCount = 0;
+                tempEvolutionStage = 0;
+                tempEvolutionType = null;
+                continue;
+            }
+        }
+
+        const otherUpdates = tempEvolutionStage === 2 ? { actionsSinceFinalEvolution: (tempBeing.actionsSinceFinalEvolution || 0) + 1 } : {};
+
         const randomAction = actions[Math.floor(Math.random() * actions.length)];
         
         switch(randomAction) {
             case "feed": {
                 if (tempBeing.stats.hunger < 100) {
-                    applyStatChanges({ hunger: 20, happiness: 5, energy: -5, strength: 10 });
+                    applyStatChanges({ hunger: 20, happiness: 5, energy: -5, strength: 10 }, otherUpdates);
                 }
                 break;
             }
             case "play": {
-                applyStatChanges({ hunger: -10, happiness: 20, energy: -15 });
+                applyStatChanges({ hunger: -10, happiness: 20, energy: -15 }, otherUpdates);
                 break;
             }
             case "sleep": {
@@ -291,27 +336,20 @@ export default function Home() {
                 
                 if (newSleepCount >= 10 && tempEvolutionStage < 2) {
                     tempEvolutionStage = 2;
-                    applyStatChanges(statChanges);
-
+                    let newBeingState;
                     if (tempBeing.stats.happiness > 80) {
                         tempEvolutionType = 'queen';
-                        tempBeing.name = "ニワトリクイーン";
-                        tempBeing.personality = "優雅で気品のあるニワトリの女王。みんなに優しい。";
-                        tempBeing.imageUrl = null;
+                        newBeingState = { name: "ニワトリクイーン", personality: "優雅で気品のあるニワトリの女王。みんなに優しい。", imageUrl: null, actionsSinceFinalEvolution: 0 };
                     } else {
                         tempEvolutionType = 'king';
-                        tempBeing.name = "ニワトリキング";
-                        tempBeing.personality = "威厳あふれるニワトリの王。風格が漂う。";
-                        tempBeing.imageUrl = null;
+                        newBeingState = { name: "ニワトリキング", personality: "威厳あふれるニワトリの王。風格が漂う。", imageUrl: null, actionsSinceFinalEvolution: 0 };
                     }
+                    applyStatChanges(statChanges, newBeingState);
                 } else if (newSleepCount >= 5 && tempEvolutionStage < 1) {
                     tempEvolutionStage = 1;
-                    applyStatChanges(statChanges);
-                    tempBeing.name = "コケこっこ";
-                    tempBeing.personality = "りっぱなニワトリに成長した！自信に満ちあふれている。";
-                    tempBeing.imageUrl = null;
+                    applyStatChanges(statChanges, { name: "コケこっこ", personality: "りっぱなニワトリに成長した！自信に満ちあふれている。", imageUrl: null });
                 } else {
-                    applyStatChanges(statChanges);
+                    applyStatChanges(statChanges, otherUpdates);
                 }
                 break;
             }
