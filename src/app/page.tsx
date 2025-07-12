@@ -2,11 +2,14 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Settings, BarChart, Save, Bug, FastForward } from "lucide-react";
+import { Settings, BarChart, Save, Bug, FastForward, LogOut } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
 
+import { useAuth } from "@/contexts/auth-context";
 import { VirtualBeing } from "@/components/virtual-being";
 import { StatsPanel } from "@/components/stats-panel";
 import { ActionsPanel } from "@/components/actions-panel";
@@ -54,9 +57,10 @@ const hasFullFirebaseConfig =
   !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
   !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
 
-const BEING_ID = "piyo-chan-01";
 
 export default function Home() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
   const [being, setBeing] = useState(initialBeing);
   const [tasks, setTasks] = useState(initialTasks);
@@ -68,6 +72,13 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [droppings, setDroppings] = useState([]);
+
+  const getBeingId = useCallback(() => {
+    if (user) {
+        return user.uid;
+    }
+    return 'local-being';
+  }, [user]);
 
   const updateBeingStats = useCallback((changes: Record<string, number>, otherBeingUpdates: Partial<typeof initialBeing> = {}) => {
     setBeing(prev => {
@@ -95,13 +106,16 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (authLoading) return;
+    
     const loadData = async () => {
       setIsLoading(true);
-      const hasFirebaseConfig = hasFullFirebaseConfig;
+      const hasFirebaseConfig = hasFullFirebaseConfig && user;
+      const beingId = getBeingId();
 
       if (hasFirebaseConfig) {
         console.log("Loading data from Firestore...");
-        const beingRef = doc(db, "beings", BEING_ID);
+        const beingRef = doc(db, "beings", beingId);
         try {
           const docSnap = await getDoc(beingRef);
           if (docSnap.exists()) {
@@ -124,7 +138,9 @@ export default function Home() {
             setDroppings(data.droppings || []);
             console.log("Data loaded from Firestore.");
           } else {
-            console.log("No existing data in Firestore, initializing a new being.");
+            console.log("No existing data in Firestore, initializing a new being for user:", beingId);
+            // Initialize a new being for a new user
+            await setDoc(beingRef, initialBeing);
           }
         } catch (error) {
           console.error("Error loading data from Firestore: ", error);
@@ -135,9 +151,9 @@ export default function Home() {
           });
         }
       } else {
-        console.warn("Firebase config not found, using local storage.");
+        console.warn("User not logged in or Firebase config not found, using local storage.");
         try {
-          const savedData = localStorage.getItem(BEING_ID);
+          const savedData = localStorage.getItem(beingId);
           if (savedData) {
             const data = JSON.parse(savedData);
             setBeing({
@@ -164,7 +180,7 @@ export default function Home() {
       setIsLoading(false);
     };
     loadData();
-  }, [toast]);
+  }, [authLoading, user, toast, getBeingId]);
 
   const handleAction = (action) => {
     if (action !== 'clean' && evolutionStage === 2) {
@@ -503,7 +519,8 @@ export default function Home() {
   };
 
   const handleSave = async () => {
-    const hasFirebaseConfig = hasFullFirebaseConfig;
+    const beingId = getBeingId();
+    const hasFirebaseConfig = hasFullFirebaseConfig && user;
 
     const dataToSave = {
         ...being,
@@ -517,9 +534,9 @@ export default function Home() {
     };
 
     if (hasFirebaseConfig) {
-      const beingRef = doc(db, "beings", BEING_ID);
+      const beingRef = doc(db, "beings", beingId);
       try {
-        await setDoc(beingRef, dataToSave);
+        await setDoc(beingRef, dataToSave, { merge: true });
         toast({
           title: "セーブしました！",
           description: "ぴよちゃんの記録をクラウドに保存しました。",
@@ -534,7 +551,7 @@ export default function Home() {
       }
     } else {
       try {
-        localStorage.setItem(BEING_ID, JSON.stringify(dataToSave));
+        localStorage.setItem(beingId, JSON.stringify(dataToSave));
         toast({
           title: "ローカルに保存しました",
           description: "ぴよちゃんの記録をブラウザに保存しました。",
@@ -590,6 +607,18 @@ export default function Home() {
     setIsGeneratingImage(false);
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: "ログアウトしました" });
+      router.push("/login");
+    } catch (error) {
+      console.error("Sign out error", error);
+      toast({ variant: "destructive", title: "ログアウトに失敗しました" });
+    }
+  };
+
+
   useEffect(() => {
     const interval = setInterval(() => {
       const decay: Record<string, number> = { hunger: -2, happiness: -1, energy: -1 };
@@ -602,29 +631,16 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [updateBeingStats, droppings]);
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
-      <div className="min-h-screen bg-background text-foreground font-body p-4 lg:p-8 animate-pulse">
-        <header className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-4xl font-headline font-bold text-primary-foreground/90">NurtureVerse</h1>
-            <p className="text-muted-foreground font-headline">新しいおともだちが、あなたを待っています。</p>
-          </div>
-        </header>
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 space-y-8">
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-36 w-full" />
-            <Skeleton className="h-48 w-full" />
-          </div>
-          <div className="lg:col-span-1 flex flex-col items-center justify-center order-first lg:order-none">
+      <div className="min-h-screen bg-background text-foreground font-body p-4 lg:p-8 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-headline font-bold text-primary-foreground/90">NurtureVerse</h1>
+          <p className="text-muted-foreground font-headline">おともだちを呼んでいます...</p>
+          <div className="flex justify-center">
             <Skeleton className="h-64 w-64 rounded-full" />
-            <Skeleton className="h-9 w-48 mt-4" />
           </div>
-          <div className="lg:col-span-1">
-            <Skeleton className="h-full w-full min-h-[400px]" />
-          </div>
-        </main>
+        </div>
       </div>
     );
   }
@@ -676,6 +692,10 @@ export default function Home() {
                </Button>
              }
            />
+           <Button variant="ghost" size="icon" onClick={handleSignOut}>
+             <LogOut className="h-5 w-5" />
+             <span className="sr-only">ログアウト</span>
+           </Button>
         </div>
       </header>
       
