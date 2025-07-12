@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,16 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
+        <div className="flex justify-center mb-4">
+            <Image
+                src="https://placehold.co/150x150.png"
+                width={100}
+                height={100}
+                alt="NurtureVerse Logo"
+                data-ai-hint="logo"
+                className="rounded-full"
+            />
+        </div>
         <h1 className="text-4xl font-headline font-bold text-primary-foreground/90 text-center mb-2">NurtureVerse</h1>
         <p className="text-muted-foreground font-headline text-center mb-8">新しいおともだちが、あなたを待っています。</p>
         
