@@ -78,11 +78,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-4">
             <Image
-                src="https://placehold.co/150x150.png"
+                src="/images/login-rounded-right.png"
                 width={100}
                 height={100}
                 alt="NurtureVerse Logo"
-                data-ai-hint="logo"
                 className="rounded-full"
             />
         </div>
