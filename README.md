@@ -28,8 +28,12 @@ Once both servers are running, you can open your web browser and navigate to the
 
 ## Building the application for production
 
-To build the application for production, run the following command:
+To build the application for production, you need to compile both the AI flows and the Next.js frontend. The configured `build` script handles this for you.
+
+Run the following command in your terminal:
 
 ```bash
 npm run build
 ```
+
+This command executes `next build`, which automatically triggers the necessary steps to prepare your entire application for deployment, including the Genkit AI functionalities. After the build process is complete, the optimized and ready-to-deploy application will be located in the `.next` directory.
